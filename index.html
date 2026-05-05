@@ -2,473 +2,200 @@
 <html lang="zh">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>工程模式 · AES密钥与授权文件签名生成器</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>SV 密码计算器 · Web Crypto 版</title>
     <style>
-        :root {
-            --bg: #121826;
-            --card-bg: #1a2332;
-            --border: #2e405b;
-            --text: #eaf0fc;
-            --label: #aec3e3;
-            --input-bg: #0d1624;
-            --input-border: #26415e;
-            --accent: #4f9af5;
-            --btn-primary: #1f6390;
-            --btn-hover: #2a77b0;
-        }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
-            font-family: 'Segoe UI', system-ui, sans-serif;
-            background: var(--bg);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            padding: 20px;
-            line-height: 1.5;
-        }
-        .container {
-            max-width: 950px;
-            width: 100%;
-            background: var(--card-bg);
-            border-radius: 28px;
-            padding: 28px;
-            box-shadow: 0 25px 45px rgba(0,0,0,0.7);
-            border: 1px solid var(--border);
-            color: var(--text);
-        }
-        h1 { font-size: 1.8rem; font-weight: 600; margin-bottom: 4px; color: #d3e2ff; }
-        .subtitle { color: #9eb4d6; margin-bottom: 24px; border-left: 4px solid #3e7fb4; padding-left: 18px; }
-        .alert {
-            background: #1e2a3a;
-            border-left: 6px solid #4f9af5;
-            padding: 14px 18px;
-            border-radius: 12px;
-            margin-bottom: 24px;
-            color: #c6e0ff;
-            font-weight: 500;
-            font-size: 0.9rem;
-        }
-        .section {
-            background: #0d1421;
-            border-radius: 18px;
-            padding: 20px;
-            margin-bottom: 24px;
-            border: 1px solid #264a6b;
-        }
-        .section h3 {
-            margin-top: 0;
-            margin-bottom: 12px;
-            color: #b8d0ff;
-            font-weight: 600;
-            font-size: 1.1rem;
-        }
-        .row {
-            display: flex;
-            gap: 18px;
-            flex-wrap: wrap;
-            margin-bottom: 16px;
-        }
-        .input-group { flex: 1; min-width: 200px; }
-        label {
-            display: block;
-            font-weight: 500;
-            margin-bottom: 6px;
-            color: var(--label);
-            font-size: 0.9rem;
-        }
-        input, select, textarea {
-            width: 100%;
-            padding: 12px 16px;
-            background: var(--input-bg);
-            border: 1.5px solid var(--input-border);
-            border-radius: 14px;
-            font-size: 1rem;
-            color: white;
-            outline: none;
-            font-family: 'SF Mono', monospace;
-        }
-        textarea {
-            resize: vertical;
-            min-height: 100px;
-            font-size: 0.8rem;
-        }
-        select option { background: #1a2332; }
-        input:focus, select:focus, textarea:focus {
-            border-color: var(--accent);
-            box-shadow: 0 0 0 3px rgba(79, 154, 245, 0.2);
-        }
-        .output-box {
-            background: #020812;
-            border: 1px solid #2c5070;
-            border-radius: 14px;
-            padding: 14px;
-            font-family: 'SF Mono', monospace;
-            font-size: 0.85rem;
-            word-break: break-all;
-            color: #b1d0f0;
-            max-height: 120px;
-            overflow-y: auto;
-            user-select: all;
-            margin-top: 8px;
-        }
-        .btn-group {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-            margin-top: 12px;
-        }
-        .btn {
-            background: #1e3048;
-            border: 1px solid #3d6082;
-            padding: 10px 22px;
-            border-radius: 40px;
-            font-weight: 600;
-            font-size: 0.95rem;
-            color: #e7f0ff;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-        .btn-primary { background: var(--btn-primary); border-color: #7fb2e0; color: white; }
-        .btn-primary:hover { background: var(--btn-hover); }
-        .btn:hover { background: #264a6e; }
-        hr { border: none; border-top: 1px solid #2c405a; margin: 20px 0; }
-        .footnote {
-            margin-top: 16px;
-            font-size: 0.8rem;
-            color: #7e95b0;
-            text-align: center;
-        }
-        .badge {
-            background: #1f4a6b;
-            padding: 2px 10px;
-            border-radius: 20px;
-            font-size: 0.7rem;
-            font-weight: 700;
-            margin-left: 8px;
-        }
+        body { font-family: sans-serif; background: #1a1a2e; color: white; padding: 16px; }
+        .card { background: #16213e; border-radius: 20px; padding: 20px; max-width: 480px; margin: 0 auto; }
+        h2 { color: #e94560; }
+        .tabs { display: flex; margin-bottom: 16px; }
+        .tab-btn { flex: 1; padding: 12px; background: #0f3460; border: none; color: white; font-weight: bold; cursor: pointer; }
+        .tab-btn.active { background: #e94560; }
+        .input-group { margin-bottom: 12px; }
+        label { display: block; margin-bottom: 4px; color: #ccc; }
+        input { width: 100%; padding: 12px; border-radius: 10px; border: none; font-size: 1.2rem; background: #0f3460; color: white; }
+        .btn { background: #e94560; color: white; border: none; padding: 14px; font-size: 1.4rem; width: 100%; border-radius: 30px; cursor: pointer; margin-top: 8px; }
+        .result { margin-top: 20px; background: #0f3460; padding: 16px; border-radius: 12px; text-align: center; }
+        .password { font-size: 3rem; font-family: monospace; color: #7ee787; letter-spacing: 8px; word-break: break-all; }
+        .info { font-size: 0.8rem; color: #aaa; margin-top: 8px; word-break: break-all; }
+        .verified { color: #3fb950; font-size: 0.7rem; margin-top: 4px; }
+        .warning { color: #d2991d; font-size: 0.8rem; margin-top: 8px; }
     </style>
 </head>
 <body>
-<div class="container">
-    <h1>🔐 傲慢与偏见鉴权演示版</h1>
-    <div class="subtitle">AES注入 + RSA私钥签名 · 纯Base64格式（与车机一致）</div>
-
-    <div class="alert">
-        <strong>📌 功能：</strong> 1) 生成AES硬件密钥 (EngSecKey.txt)；2) 使用RSA私钥对授权文件签名。<br>
-        私钥和公钥均采用纯Base64格式（与车机代码一致）。<br>
-        如果无私钥，可点击「生成随机私钥」获得临时私钥用于体验签名/验签流程。
+<div class="card">
+    <h2>⚙️ SV 工程密码</h2>
+    <div class="tabs">
+        <button class="tab-btn active" id="tabVin" onclick="switchMode('vin')">VIN</button>
+        <button class="tab-btn" id="tabChery" onclick="switchMode('chery')">Chery@</button>
     </div>
 
-    <!-- ========== AES 密钥 ========== -->
-    <div class="section">
-        <h3>🔑 AES 硬件密钥 · EngSecKey.txt</h3>
-        <p style="color: #9eb4d6; font-size: 0.85rem; margin-bottom: 12px;">
-            生成 32 字节随机十六进制字符串，放入 U 盘根目录，在工程模式 ADB 开关界面点击“注入AESKEY”。
-        </p>
-        <div class="output-box" id="aesKeyDisplay">点击下方按钮生成</div>
-        <div class="btn-group">
-            <button class="btn btn-primary" id="genAesBtn">🎲 生成随机 AES 密钥</button>
-            <button class="btn" id="downloadAesBtn">⬇ 下载 EngSecKey.txt</button>
+    <div id="vinMode">
+        <div class="input-group">
+            <label>VIN 后六位</label>
+            <input type="text" id="vinInput" value="239399" oninput="compute()">
+        </div>
+        <div class="input-group">
+            <label>随机码 (4位)</label>
+            <input type="text" id="randomVin" value="5109" oninput="compute()">
         </div>
     </div>
 
-    <!-- ========== RSA 公钥（固定，纯Base64） ========== -->
-    <div class="section">
-        <h3>🔑 车机固定 RSA 公钥 <span class="badge">纯Base64 · 固定不变</span></h3>
-        <div class="output-box" id="pubkeyDisplay" style="max-height:80px; font-size:0.75rem;">MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA10pjZNRMXXdHqnqI3BbAX3kmAeAck0TZxisu4pBtw7J0x0H2ZMl3xfz+gAsqIJAzC4uMoQ0grg1mlPPicJE+VCSmyiCdI+CuFbQzbZYitOQzpjN9eyXGkJV0LSq6qvSVuD5/b10lUmLLsK6YWpERrHfypLTd49XbsYUwb2O9QwZZoPvFHwNwmK7DONWTNCLAg3+UEDoItSvzjiw1G8d1ipANtejMY0mYdjrjJFmtsKeCvW4iUYBhz8vAq5ty+hVLEu8gwI990p0WuBCLyX4CdaltmKba5Fynq0J7CZ+PR2KM1MdifDLsh7r6/tkoST830m0ee3m7a+lqF0UlTsw9MQIDAQAB</div>
-        <button class="btn" id="copyPubkeyBtn" style="margin-top:8px;">📋 复制公钥</button>
+    <div id="cheryMode" style="display:none;">
+        <div class="input-group">
+            <label>ProductID 后六位</label>
+            <input type="text" id="prodInput" value="000346" oninput="compute()">
+        </div>
+        <div class="input-group">
+            <label>ranNum (4位)</label>
+            <input type="text" id="randomChery" value="4997" oninput="compute()">
+        </div>
     </div>
 
-    <!-- ========== 私钥输入区 ========== -->
-    <div class="section">
-        <h3>🔓 RSA 私钥 <span class="badge">纯Base64 或 PEM 格式</span></h3>
-        <textarea id="privateKeyInput" placeholder="纯Base64私钥 或 -----BEGIN PRIVATE KEY----- ..."></textarea>
-        <div class="btn-group">
-            <button class="btn btn-primary" id="generateTempKeyBtn">🔄 生成随机私钥 (纯Base64)</button>
-            <button class="btn" id="clearPrivateKeyBtn">🧹 清空私钥框</button>
-        </div>
-        <p style="color: #9eb4d6; font-size: 0.75rem; margin-top: 8px;">
-            ⚠️ 随机生成的私钥仅用于演示，对应的公钥并非车机公钥。若拥有正确私钥，请直接粘贴。
-        </p>
-    </div>
+    <button class="btn" onclick="compute()">计 算 密 码</button>
 
-    <!-- ========== 签名数据 ========== -->
-    <div class="section">
-        <h3>📝 签名数据</h3>
-        <div class="row">
-            <div class="input-group">
-                <label>📟 硬件序列号</label>
-                <input type="text" id="serialInput" placeholder="机器码" value="">
-            </div>
-            <div class="input-group">
-                <label>📅 日期 (yyyyMMdd) — 默认今日</label>
-                <input type="text" id="dateInput" placeholder="20260116">
-            </div>
-        </div>
-        <div class="row">
-            <div class="input-group">
-                <label>🔧 授权类型</label>
-                <select id="authTypeSelect">
-                    <option value="adb" selected>📱 ADB 授权 — 序列号+日期</option>
-                    <option value="superdoor">🚪 超级后门 — 序列号+9+日期</option>
-                </select>
-            </div>
-        </div>
-        <p style="color: #9eb4d6; font-size: 0.85rem; margin-bottom: 4px;"><strong>待签名数据：</strong></p>
-        <div class="output-box" id="dataPreview">（请输入序列号）</div>
-    </div>
-
-    <!-- ========== 签名操作 ========== -->
-    <div class="section">
-        <h3>✍️ 生成签名</h3>
-        <div class="btn-group">
-            <button class="btn btn-primary" id="signBtn">✍️ 生成签名</button>
-            <button class="btn" id="verifyBtn">🔍 验证签名</button>
-            <button class="btn" id="downloadAdbBtn">⬇ 下载 adbauth.key</button>
-            <button class="btn" id="downloadSuperBtn">⬇ 下载 superdoor.key</button>
-            <button class="btn" id="copySigBtn">📋 复制签名</button>
-        </div>
-        <p style="color: #9eb4d6; font-size: 0.85rem; margin-top: 12px; margin-bottom: 4px;"><strong>签名结果 (纯Base64)：</strong></p>
-        <div class="output-box" id="signaturePreview">尚未生成</div>
-    </div>
-
-    <hr>
-    <div class="footnote">
-        ✅ AES密钥随机生成 · RSA签名在浏览器本地执行。<br>
-        * 所有密钥和签名均为纯Base64格式，与车机代码一致。
+    <div class="result">
+        <div class="password" id="passwordResult">加载中...</div>
+        <div class="info" id="fullHexPreview"></div>
+        <div class="verified">✅ VIN(239399+5109)=79c873 | Chery(000346+4997)=Chery@380156</div>
+        <div class="warning" id="warningText" style="display:none;">⚠️ 请使用 localhost 或 HTTPS 打开此页面</div>
     </div>
 </div>
 
 <script>
-    (function(){
-        // 固定公钥（硬编码，纯Base64）
-        const HARDCODED_PUBKEY = `MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA10pjZNRMXXdHqnqI3BbAX3kmAeAck0TZxisu4pBtw7J0x0H2ZMl3xfz+gAsqIJAzC4uMoQ0grg1mlPPicJE+VCSmyiCdI+CuFbQzbZYitOQzpjN9eyXGkJV0LSq6qvSVuD5/b10lUmLLsK6YWpERrHfypLTd49XbsYUwb2O9QwZZoPvFHwNwmK7DONWTNCLAg3+UEDoItSvzjiw1G8d1ipANtejMY0mYdjrjJFmtsKeCvW4iUYBhz8vAq5ty+hVLEu8gwI990p0WuBCLyX4CdaltmKba5Fynq0J7CZ+PR2KM1MdifDLsh7r6/tkoST830m0ee3m7a+lqF0UlTsw9MQIDAQAB`;
+const KEY_HEX = "2377DEAE3106286889297B8AEC0A157E";
+let currentMode = 'vin';
 
-        // DOM
-        const pubkeyDisplay = document.getElementById('pubkeyDisplay');
-        const privateKeyInput = document.getElementById('privateKeyInput');
-        const serialInput = document.getElementById('serialInput');
-        const dateInput = document.getElementById('dateInput');
-        const authTypeSelect = document.getElementById('authTypeSelect');
-        const dataPreview = document.getElementById('dataPreview');
-        const signaturePreview = document.getElementById('signaturePreview');
-        const aesDisplay = document.getElementById('aesKeyDisplay');
+// 检查环境
+if (window.crypto && window.crypto.subtle) {
+    document.getElementById('warningText').style.display = 'none';
+} else {
+    document.getElementById('warningText').style.display = 'block';
+}
 
-        let lastSignature = null;
-        let currentAesKey = '';
+function getLast6(s) {
+    const c = s.trim().toUpperCase();
+    return c.length > 6 ? c.slice(-6) : c.padStart(6, '0');
+}
 
-        // 临时密钥对（用于演示，存储 CryptoKey 对象）
-        let tempKeyPair = null;
+// 使用 Web Crypto API 实现 AES-CMAC
+async function aesCmac(keyHex, message) {
+    const keyBytes = new Uint8Array(keyHex.match(/.{2}/g).map(b => parseInt(b, 16)));
+    const key = await crypto.subtle.importKey("raw", keyBytes, { name: "AES-CBC" }, false, ["encrypt"]);
 
-        // 初始化公钥显示
-        pubkeyDisplay.textContent = HARDCODED_PUBKEY;
-        // 私钥框初始为空
-        privateKeyInput.value = '';
+    const msgBytes = new TextEncoder().encode(message);
+    const blockSize = 16;
 
-        // 日期默认
-        function getTodayStr() {
-            const d = new Date();
-            return d.getFullYear() + String(d.getMonth()+1).padStart(2,'0') + String(d.getDate()).padStart(2,'0');
+    // 1. 生成子密钥 K1, K2
+    const zero = new Uint8Array(16);
+    const L = new Uint8Array(await crypto.subtle.encrypt(
+        { name: "AES-CBC", iv: zero }, key, zero
+    ));  // AES-CBC with zero IV and zero plaintext = AES(0)
+
+    function leftShift128(arr) {
+        let carry = 0;
+        const res = new Uint8Array(16);
+        for (let i = 15; i >= 0; i--) {
+            let val = arr[i];
+            let nc = (val & 0x80) ? 1 : 0;
+            res[i] = ((val << 1) & 0xFF) | carry;
+            carry = nc;
         }
-        if (!dateInput.value) dateInput.value = getTodayStr();
+        if (carry) res[15] ^= 0x87;
+        return res;
+    }
+    const K1 = leftShift128(L);
+    const K2 = leftShift128(K1);
 
-        // ---- AES ----
-        function randomHex(size) {
-            const arr = new Uint8Array(size);
-            crypto.getRandomValues(arr);
-            return Array.from(arr, b => b.toString(16).padStart(2, '0')).join('');
-        }
+    // 2. 填充
+    const isComplete = (msgBytes.length % blockSize === 0 && msgBytes.length > 0);
+    let padded;
+    if (isComplete) {
+        padded = msgBytes.slice();
+    } else {
+        padded = new Uint8Array(msgBytes.length + blockSize - (msgBytes.length % blockSize));
+        padded.set(msgBytes);
+        padded[msgBytes.length] = 0x80;
+        for (let i = msgBytes.length + 1; i < padded.length; i++) padded[i] = 0x00;
+    }
 
-        document.getElementById('genAesBtn').addEventListener('click', () => {
-            currentAesKey = randomHex(32).toUpperCase();
-            aesDisplay.textContent = currentAesKey;
-        });
+    // 3. 分块
+    const blocks = [];
+    for (let i = 0; i < padded.length; i += blockSize) {
+        blocks.push(padded.slice(i, i + blockSize));
+    }
 
-        document.getElementById('downloadAesBtn').addEventListener('click', () => {
-            if (!currentAesKey) { alert('请先生成 AES 密钥'); return; }
-            const blob = new Blob([currentAesKey], { type: 'application/octet-stream' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'EngSecKey.txt';
-            a.click();
-            URL.revokeObjectURL(url);
-        });
+    // 4. 最后一块异或子密钥
+    let lastBlock = blocks.pop();
+    const subKey = isComplete ? K1 : K2;
+    for (let i = 0; i < blockSize; i++) {
+        lastBlock[i] ^= subKey[i];
+    }
 
-        // 初始生成一个 AES 密钥
-        currentAesKey = randomHex(32).toUpperCase();
-        aesDisplay.textContent = currentAesKey;
+    // 5. CBC-MAC (使用 ECB 方式：每次用零 IV 加密一个异或后的块)
+    let x = new Uint8Array(16);
+    const zeroIv = new Uint8Array(16);
+    for (const blk of blocks) {
+        const input = new Uint8Array(16);
+        for (let i = 0; i < 16; i++) input[i] = blk[i] ^ x[i];
+        x = new Uint8Array(await crypto.subtle.encrypt(
+            { name: "AES-CBC", iv: zeroIv }, key, input
+        ));
+    }
+    // 最后一块
+    const finalInput = new Uint8Array(16);
+    for (let i = 0; i < 16; i++) finalInput[i] = lastBlock[i] ^ x[i];
+    const cmac = new Uint8Array(await crypto.subtle.encrypt(
+        { name: "AES-CBC", iv: zeroIv }, key, finalInput
+    ));
 
-        // ---- RSA 签名数据 ----
-        function getDataString() {
-            const serial = serialInput.value.trim() || 'UNKNOWN';
-            let date = dateInput.value.trim();
-            if (!/^\d{8}$/.test(date)) {
-                date = getTodayStr();
-                dateInput.value = date;
-            }
-            const type = authTypeSelect.value;
-            return (type === 'superdoor') ? serial + '9' + date : serial + date;
-        }
+    return Array.from(cmac).map(b => b.toString(16).padStart(2, '0')).join('');
+}
 
-        function updateDataPreview() {
-            const serial = serialInput.value.trim();
-            dataPreview.textContent = serial ? getDataString() : '（请输入序列号）';
-        }
+async function compute() {
+    if (!window.crypto || !window.crypto.subtle) {
+        document.getElementById('passwordResult').textContent = '请使用HTTPS/localhost';
+        return;
+    }
 
-        serialInput.addEventListener('input', updateDataPreview);
-        dateInput.addEventListener('input', function() {
-            this.value = this.value.replace(/\D/g,'').slice(0,8);
-            updateDataPreview();
-        });
-        authTypeSelect.addEventListener('change', updateDataPreview);
-        updateDataPreview();
+    let inp6, r4;
+    if (currentMode === 'vin') {
+        inp6 = getLast6(document.getElementById('vinInput').value);
+        r4 = document.getElementById('randomVin').value.trim();
+    } else {
+        inp6 = getLast6(document.getElementById('prodInput').value);
+        r4 = document.getElementById('randomChery').value.trim();
+    }
 
-        // ---- 工具函数 ----
-        function pemToArrayBuffer(pem) {
-            // 兼容纯Base64和PEM格式：先去掉头尾，再去掉所有空白字符
-            const b64 = pem.replace(/-----[^-]+-----/g, '').replace(/\s/g, '');
-            const bytes = new Uint8Array(b64.length);
-            for (let i = 0; i < b64.length; i++) bytes[i] = b64.charCodeAt(i);
-            return bytes.buffer;
-        }
-        function arrayBufferToBase64(buffer) {
-            const bytes = new Uint8Array(buffer);
-            let bin = '';
-            for (let i = 0; i < bytes.byteLength; i++) bin += String.fromCharCode(bytes[i]);
-            return btoa(bin);
-        }
+    if (!/^\d{4}$/.test(r4)) {
+        document.getElementById('passwordResult').textContent = '随机码需4位数字';
+        document.getElementById('fullHexPreview').innerHTML = '';
+        return;
+    }
 
-        function importPrivateKey(keyData) {
-            // 接受纯Base64或PEM
-            return crypto.subtle.importKey('pkcs8', pemToArrayBuffer(keyData),
-                { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['sign']);
-        }
+    const raw = inp6 + r4 + "0123";
+    try {
+        const fullHex = (await aesCmac(KEY_HEX, raw)).toLowerCase();
+        const password = fullHex.slice(-6);
+        const display = currentMode === 'chery' ? 'Chery@' + password : password;
+        document.getElementById('passwordResult').textContent = display;
+        document.getElementById('fullHexPreview').innerHTML = `输入: "${raw}"<br>CMAC: ${fullHex}<br>密码: ${password}`;
+    } catch (e) {
+        document.getElementById('passwordResult').textContent = '计算错误';
+        console.error(e);
+    }
+}
 
-        function importPublicKey(keyData) {
-            return crypto.subtle.importKey('spki', pemToArrayBuffer(keyData),
-                { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, true, ['verify']);
-        }
+function switchMode(mode) {
+    currentMode = mode;
+    document.getElementById('vinMode').style.display = mode === 'vin' ? 'block' : 'none';
+    document.getElementById('cheryMode').style.display = mode === 'chery' ? 'block' : 'none';
+    document.getElementById('tabVin').classList.toggle('active', mode === 'vin');
+    document.getElementById('tabChery').classList.toggle('active', mode === 'chery');
+    compute();
+}
 
-        // ---- 生成临时密钥对 ----
-        async function generateTempKeyPair() {
-            return await crypto.subtle.generateKey(
-                {
-                    name: 'RSASSA-PKCS1-v1_5',
-                    modulusLength: 2048,
-                    publicExponent: new Uint8Array([0x01, 0x00, 0x01]),
-                    hash: 'SHA-256'
-                },
-                true,
-                ['sign', 'verify']
-            );
-        }
-
-        // 导出私钥为纯Base64（无PEM头尾）
-        async function exportPrivateKeyBase64(key) {
-            const exported = await crypto.subtle.exportKey('pkcs8', key);
-            return arrayBufferToBase64(exported);
-        }
-
-        // 生成随机私钥并填入（纯Base64）
-        document.getElementById('generateTempKeyBtn').addEventListener('click', async () => {
-            try {
-                tempKeyPair = await generateTempKeyPair();
-                const privBase64 = await exportPrivateKeyBase64(tempKeyPair.privateKey);
-                privateKeyInput.value = privBase64;
-                alert('✅ 临时私钥已生成并填入（纯Base64格式）。\n该私钥对应的公钥并非车机公钥，仅用于演示签名/验签。');
-            } catch (e) {
-                alert('生成失败: ' + e.message);
-            }
-        });
-
-        // 清空私钥
-        document.getElementById('clearPrivateKeyBtn').addEventListener('click', () => {
-            privateKeyInput.value = '';
-            tempKeyPair = null;
-        });
-
-        // ---- 签名 ----
-        document.getElementById('signBtn').addEventListener('click', async () => {
-            try {
-                let privateKey;
-                const keyText = privateKeyInput.value.trim();
-                if (!keyText) {
-                    alert('请先生成随机私钥或粘贴正确私钥。');
-                    return;
-                }
-                // 检查是否有临时密钥对且文本框内容匹配临时私钥
-                if (tempKeyPair) {
-                    const tempPrivBase64 = await exportPrivateKeyBase64(tempKeyPair.privateKey);
-                    if (keyText === tempPrivBase64) {
-                        privateKey = tempKeyPair.privateKey;
-                    }
-                }
-                // 如果不是临时私钥，则尝试导入
-                if (!privateKey) {
-                    privateKey = await importPrivateKey(keyText);
-                }
-                const data = getDataString();
-                const sig = await crypto.subtle.sign({ name: 'RSASSA-PKCS1-v1_5' }, privateKey, new TextEncoder().encode(data));
-                lastSignature = arrayBufferToBase64(sig);
-                signaturePreview.textContent = lastSignature;
-            } catch (e) {
-                alert('签名失败: ' + e.message);
-                console.error(e);
-            }
-        });
-
-        // ---- 验证签名 ----
-        document.getElementById('verifyBtn').addEventListener('click', async () => {
-            try {
-                if (!lastSignature) { alert('请先生成签名。'); return; }
-                let publicKey;
-                if (tempKeyPair) {
-                    // 如果是临时密钥对，用临时公钥验证（因为签名也是用临时私钥）
-                    publicKey = tempKeyPair.publicKey;
-                } else {
-                    // 否则尝试用硬编码公钥验证（如果用户粘贴了正确私钥）
-                    publicKey = await importPublicKey(HARDCODED_PUBKEY);
-                }
-                const data = getDataString();
-                const sigBuf = Uint8Array.from(atob(lastSignature), c => c.charCodeAt(0)).buffer;
-                const isValid = await crypto.subtle.verify({ name: 'RSASSA-PKCS1-v1_5' }, publicKey, sigBuf, new TextEncoder().encode(data));
-                alert(isValid ? '✅ 签名验证成功！' : '❌ 签名验证失败！');
-            } catch (e) {
-                alert('验证出错: ' + e.message);
-                console.error(e);
-            }
-        });
-
-        // ---- 下载/复制 ----
-        function dl(content, name) {
-            const blob = new Blob([content], { type: 'application/octet-stream' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = name;
-            a.click();
-            URL.revokeObjectURL(url);
-        }
-
-        document.getElementById('downloadAdbBtn').addEventListener('click', () => {
-            if (!lastSignature) { alert('先生成签名'); return; }
-            dl(lastSignature, 'adbauth.key');
-        });
-        document.getElementById('downloadSuperBtn').addEventListener('click', () => {
-            if (!lastSignature) { alert('先生成签名'); return; }
-            dl(lastSignature, 'superdoor.key');
-        });
-        document.getElementById('copySigBtn').addEventListener('click', () => {
-            if (!lastSignature) { alert('先生成签名'); return; }
-            navigator.clipboard?.writeText(lastSignature).then(() => alert('已复制'));
-        });
-        document.getElementById('copyPubkeyBtn').addEventListener('click', () => {
-            navigator.clipboard?.writeText(HARDCODED_PUBKEY).then(() => alert('已复制'));
-        });
-    })();
+window.onload = compute;
 </script>
 </body>
 </html>
