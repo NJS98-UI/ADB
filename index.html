@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>工程模式 · 密钥与授权文件签名生成器</title>
+    <title>工程模式 · AES密钥与授权文件签名生成器 (密码保护)</title>
     <style>
         :root {
             --bg: #121826;
@@ -167,10 +167,10 @@
 
 <div class="container" id="mainContainer" style="display: none;">
     <h1>🔐 密钥与授权文件签名生成器</h1>
-    <div class="subtitle">AES注入 + RSA私钥签名 · 固定4096位密钥（作为私钥）</div>
+    <div class="subtitle">AES注入 + 固定4096位私钥(公钥) + 2048位公钥验证</div>
 
     <div class="alert">
-        <strong>⚠️ 重要提示：</strong> 内置的4096位密钥为公钥，无法用于签名。点击生成签名会报错。
+        <strong>⚠️ 说明：</strong> 内置 4096 位密钥实际为公钥，无法用于签名。2048 位公钥用于验证签名。
     </div>
 
     <!-- AES 密钥 -->
@@ -184,10 +184,20 @@
         </div>
     </div>
 
-    <!-- 固定私钥 -->
+    <!-- 2048位固定公钥（用于验证） -->
     <div class="section">
-        <h3>🔓 内置固定私钥 (4096位) <span class="badge">只读</span></h3>
+        <h3>🔑 车机固定 RSA 公钥 (2048位) · 用于验证签名</h3>
+        <div class="output-box" style="max-height:80px; font-size:0.75rem;">MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA10pjZNRMXXdHqnqI3BbAX3kmAeAck0TZxisu4pBtw7J0x0H2ZMl3xfz+gAsqIJAzC4uMoQ0grg1mlPPicJE+VCSmyiCdI+CuFbQzbZYitOQzpjN9eyXGkJV0LSq6qvSVuD5/b10lUmLLsK6YWpERrHfypLTd49XbsYUwb2O9QwZZoPvFHwNwmK7DONWTNCLAg3+UEDoItSvzjiw1G8d1ipANtejMY0mYdjrjJFmtsKeCvW4iUYBhz8vAq5ty+hVLEu8gwI990p0WuBCLyX4CdaltmKba5Fynq0J7CZ+PR2KM1MdifDLsh7r6/tkoST830m0ee3m7a+lqF0UlTsw9MQIDAQAB</div>
+        <button class="btn" id="copyPubkeyBtn" style="margin-top:8px;">📋 复制 2048 位公钥</button>
+    </div>
+
+    <!-- 4096位固定私钥（只读，实际为公钥） -->
+    <div class="section">
+        <h3>🔓 内置固定私钥 (4096位) · 实际为公钥，签名将失败</h3>
         <textarea id="privateKeyInput" readonly style="height: 140px;">MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEA50ZLpDBDwth5Y1EI4Y6yykxWQIqm0LWCEkoA52YcpPJDsscuxZToki6a5l+8GFLlMxvhg2I8ph+bThsngy2wmL5Ip3NNFwCYrRIvowfofQ+UltChkn/bK3VE3+3Ndb9RLbU9O3ocXhiH24tWKFBh6+cglMDolsgjOjPDN6HfJiWXEx/hOXREF9dqLy8/xemHHdVLErf3WmyNFgTdagn/VCnERfzNZoi4O4Oa4Jk3/puVLJCMjT/iS4F+xXSr16fwNZcIiqNn6oda702BAFKcPe+Zn+NyhrShSL36DRvCwlpAMdqz6+KaC8mZZPZthcHfYJP1jciZDUJ6XKMJY3Bc9bCFDPIbRfK+a3HSU46U8hvuDVfP+DQw8u+URKlY1ISWyjTKr6W1GhU1Fb9Y2MDhgoqMc20pD4C9HDlg4Cloc30Oasc3TRcL+cGIG1donPLF/wsA3e9nOOEKUx7IxUQ1ly7DUtWMj/VbRV6GgXkEBKR9EFDxcRspuIZmMVo8ktAf23aNW4AERdaBTsoILMMc5KBc9k9eLzIBP0H4N3wAp1B1PowMGFY+JFQaCKLNmOxiyfCVN4eIn641xvJySuEgLCpdD3SOGJN7kuM2Is3I2ZpIHRtVzhXdc1IGOK9d8xFjkTWZhaL6l+5ypQ+EOAoPu9m+5QHnOWfnTU/68kDPGPsCAwEAAQ==</textarea>
+        <p style="color: #9eb4d6; font-size: 0.75rem; margin-top: 8px;">
+            ⚠️ 该密钥为从 APK 提取的 4096 位公钥，无法作为私钥签名。
+        </p>
     </div>
 
     <!-- 签名数据 -->
@@ -218,18 +228,20 @@
 
     <!-- 签名操作 -->
     <div class="section">
-        <h3>✍️ 生成签名</h3>
+        <h3>✍️ 生成 & 验证签名</h3>
         <div class="btn-group">
             <button class="btn btn-primary" id="signBtn">✍️ 生成签名</button>
+            <button class="btn" id="verifyBtn">🔍 验证签名</button>
             <button class="btn" id="downloadAdbBtn">⬇ 下载 adbauth.key</button>
             <button class="btn" id="downloadSuperBtn">⬇ 下载 superdoor.key</button>
+            <button class="btn" id="copySigBtn">📋 复制签名</button>
         </div>
         <p style="color: #9eb4d6; font-size: 0.85rem; margin-top: 12px; margin-bottom: 4px;"><strong>签名结果：</strong></p>
         <div class="output-box" id="signaturePreview">尚未生成</div>
     </div>
 
     <hr>
-    <div class="footnote">* 内置密钥为公钥，无法生成有效签名。</div>
+    <div class="footnote">* 2048位公钥用于验证签名，与车机验证逻辑一致。4096位密钥为公钥，无法签名。</div>
 </div>
 
 <script>
@@ -254,8 +266,9 @@
             if (e.key === 'Enter') loginBtn.click();
         });
 
-        // 固定私钥（实际为公钥）
-        const FIXED_KEY = `MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEA50ZLpDBDwth5Y1EI4Y6yykxWQIqm0LWCEkoA52YcpPJDsscuxZToki6a5l+8GFLlMxvhg2I8ph+bThsngy2wmL5Ip3NNFwCYrRIvowfofQ+UltChkn/bK3VE3+3Ndb9RLbU9O3ocXhiH24tWKFBh6+cglMDolsgjOjPDN6HfJiWXEx/hOXREF9dqLy8/xemHHdVLErf3WmyNFgTdagn/VCnERfzNZoi4O4Oa4Jk3/puVLJCMjT/iS4F+xXSr16fwNZcIiqNn6oda702BAFKcPe+Zn+NyhrShSL36DRvCwlpAMdqz6+KaC8mZZPZthcHfYJP1jciZDUJ6XKMJY3Bc9bCFDPIbRfK+a3HSU46U8hvuDVfP+DQw8u+URKlY1ISWyjTKr6W1GhU1Fb9Y2MDhgoqMc20pD4C9HDlg4Cloc30Oasc3TRcL+cGIG1donPLF/wsA3e9nOOEKUx7IxUQ1ly7DUtWMj/VbRV6GgXkEBKR9EFDxcRspuIZmMVo8ktAf23aNW4AERdaBTsoILMMc5KBc9k9eLzIBP0H4N3wAp1B1PowMGFY+JFQaCKLNmOxiyfCVN4eIn641xvJySuEgLCpdD3SOGJN7kuM2Is3I2ZpIHRtVzhXdc1IGOK9d8xFjkTWZhaL6l+5ypQ+EOAoPu9m+5QHnOWfnTU/68kDPGPsCAwEAAQ==`;
+        // 密钥定义
+        const PUBKEY_2048 = `MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA10pjZNRMXXdHqnqI3BbAX3kmAeAck0TZxisu4pBtw7J0x0H2ZMl3xfz+gAsqIJAzC4uMoQ0grg1mlPPicJE+VCSmyiCdI+CuFbQzbZYitOQzpjN9eyXGkJV0LSq6qvSVuD5/b10lUmLLsK6YWpERrHfypLTd49XbsYUwb2O9QwZZoPvFHwNwmK7DONWTNCLAg3+UEDoItSvzjiw1G8d1ipANtejMY0mYdjrjJFmtsKeCvW4iUYBhz8vAq5ty+hVLEu8gwI990p0WuBCLyX4CdaltmKba5Fynq0J7CZ+PR2KM1MdifDLsh7r6/tkoST830m0ee3m7a+lqF0UlTsw9MQIDAQAB`;
+        const FIXED_KEY_4096 = `MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEA50ZLpDBDwth5Y1EI4Y6yykxWQIqm0LWCEkoA52YcpPJDsscuxZToki6a5l+8GFLlMxvhg2I8ph+bThsngy2wmL5Ip3NNFwCYrRIvowfofQ+UltChkn/bK3VE3+3Ndb9RLbU9O3ocXhiH24tWKFBh6+cglMDolsgjOjPDN6HfJiWXEx/hOXREF9dqLy8/xemHHdVLErf3WmyNFgTdagn/VCnERfzNZoi4O4Oa4Jk3/puVLJCMjT/iS4F+xXSr16fwNZcIiqNn6oda702BAFKcPe+Zn+NyhrShSL36DRvCwlpAMdqz6+KaC8mZZPZthcHfYJP1jciZDUJ6XKMJY3Bc9bCFDPIbRfK+a3HSU46U8hvuDVfP+DQw8u+URKlY1ISWyjTKr6W1GhU1Fb9Y2MDhgoqMc20pD4C9HDlg4Cloc30Oasc3TRcL+cGIG1donPLF/wsA3e9nOOEKUx7IxUQ1ly7DUtWMj/VbRV6GgXkEBKR9EFDxcRspuIZmMVo8ktAf23aNW4AERdaBTsoILMMc5KBc9k9eLzIBP0H4N3wAp1B1PowMGFY+JFQaCKLNmOxiyfCVN4eIn641xvJySuEgLCpdD3SOGJN7kuM2Is3I2ZpIHRtVzhXdc1IGOK9d8xFjkTWZhaL6l+5ypQ+EOAoPu9m+5QHnOWfnTU/68kDPGPsCAwEAAQ==`;
 
         // AES 功能
         const aesDisplay = document.getElementById('aesKeyDisplay');
@@ -281,7 +294,6 @@
             a.click();
         });
 
-        // 初始化 AES
         currentAesKey = randomHex(32).toUpperCase();
         aesDisplay.textContent = currentAesKey;
 
@@ -314,7 +326,7 @@
         authTypeSelect.addEventListener('change', updateDataPreview);
         updateDataPreview();
 
-        // 签名函数
+        // 签名/验证工具函数
         function pemToBuffer(pem) {
             const b64 = pem.replace(/-----[^-]+-----/g, '').replace(/\s/g, '');
             const bytes = new Uint8Array(b64.length);
@@ -329,10 +341,20 @@
             return btoa(bin);
         }
 
+        async function importPrivateKey(pem) {
+            return crypto.subtle.importKey('pkcs8', pemToBuffer(pem),
+                { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['sign']);
+        }
+
+        async function importPublicKey(pem) {
+            return crypto.subtle.importKey('spki', pemToBuffer(pem),
+                { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, true, ['verify']);
+        }
+
+        // 签名（使用4096位固定密钥）
         document.getElementById('signBtn').addEventListener('click', async () => {
             try {
-                const key = await crypto.subtle.importKey('pkcs8', pemToBuffer(FIXED_KEY),
-                    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['sign']);
+                const key = await importPrivateKey(FIXED_KEY_4096);
                 const sig = await crypto.subtle.sign({ name: 'RSASSA-PKCS1-v1_5' }, key, new TextEncoder().encode(getDataString()));
                 lastSignature = arrayBufferToBase64(sig);
                 signaturePreview.textContent = lastSignature;
@@ -342,6 +364,20 @@
             }
         });
 
+        // 验证签名（使用2048位固定公钥）
+        document.getElementById('verifyBtn').addEventListener('click', async () => {
+            try {
+                if (!lastSignature) { alert('请先生成签名'); return; }
+                const pubKey = await importPublicKey(PUBKEY_2048);
+                const sigBuf = Uint8Array.from(atob(lastSignature), c => c.charCodeAt(0)).buffer;
+                const isValid = await crypto.subtle.verify({ name: 'RSASSA-PKCS1-v1_5' }, pubKey, sigBuf, new TextEncoder().encode(getDataString()));
+                alert(isValid ? '✅ 签名验证成功！' : '❌ 签名验证失败！');
+            } catch (e) {
+                alert('验证出错: ' + e.message);
+            }
+        });
+
+        // 下载/复制
         function download(content, filename) {
             const blob = new Blob([content], { type: 'application/octet-stream' });
             const a = document.createElement('a');
@@ -357,6 +393,13 @@
         document.getElementById('downloadSuperBtn').addEventListener('click', () => {
             if (!lastSignature) { alert('请先生成签名'); return; }
             download(lastSignature, 'superdoor.key');
+        });
+        document.getElementById('copySigBtn').addEventListener('click', () => {
+            if (!lastSignature) { alert('请先生成签名'); return; }
+            navigator.clipboard?.writeText(lastSignature).then(() => alert('已复制'));
+        });
+        document.getElementById('copyPubkeyBtn').addEventListener('click', () => {
+            navigator.clipboard?.writeText(PUBKEY_2048).then(() => alert('2048位公钥已复制'));
         });
     })();
 </script>
