@@ -2,208 +2,363 @@
 <html lang="zh">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SV 工程模式密码计算器 · 已验证版</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>工程模式 · 密钥与授权文件签名生成器</title>
     <style>
         :root {
-            --bg: #0d1117; --card-bg: #161b22; --border: #30363d;
-            --text: #c9d1d9; --accent: #58a6ff; --success: #238636;
-            --warning: #d2991d; --error: #da3633;
-            --font-mono: 'Fira Code', 'Courier New', monospace;
+            --bg: #121826;
+            --card-bg: #1a2332;
+            --border: #2e405b;
+            --text: #eaf0fc;
+            --label: #aec3e3;
+            --input-bg: #0d1624;
+            --input-border: #26415e;
+            --accent: #4f9af5;
+            --btn-primary: #1f6390;
+            --btn-hover: #2a77b0;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background: var(--bg); min-height: 100vh; display: flex; justify-content: center; align-items: center; font-family: system-ui; padding: 16px; }
-        .card { background: var(--card-bg); max-width: 540px; width: 100%; padding: 24px 20px; border-radius: 28px; box-shadow: 0 20px 40px rgba(0,0,0,0.6); border: 1px solid var(--border); }
-        h2 { color: var(--accent); text-align: center; font-size: 1.8rem; margin-bottom: 8px; }
-        .sub { text-align: center; color: #8b949e; margin-bottom: 18px; font-size: 0.9rem; }
-        .tabs { display: flex; background: #0d1117; border-radius: 12px; padding: 4px; margin-bottom: 20px; }
-        .tab-btn { flex: 1; padding: 10px; border: none; background: transparent; color: #8b949e; border-radius: 10px; font-weight: 600; cursor: pointer; }
-        .tab-btn.active { background: var(--accent); color: #fff; }
-        .input-group { margin-bottom: 16px; }
-        label { display: block; color: var(--text); margin-bottom: 6px; font-size: 0.9rem; }
-        input { width: 100%; padding: 12px 16px; background: #0d1117; border: 1px solid var(--border); border-radius: 14px; color: #f0f6fc; font-size: 1.1rem; outline: none; }
-        .random-row { display: flex; gap: 10px; }
-        .random-row input { flex: 2; }
-        .btn { background: #21262d; border: 1px solid var(--border); color: var(--text); padding: 10px 14px; border-radius: 20px; cursor: pointer; font-weight: 600; }
-        .btn-primary { background: var(--success); color: white; padding: 16px; font-size: 1.3rem; width: 100%; border-radius: 40px; margin-top: 10px; border: none; cursor: pointer; }
-        .result-box { margin-top: 24px; background: #0d1117; border-radius: 20px; padding: 20px; border: 1px solid var(--border); text-align: center; }
-        #passwordResult { font-size: 3rem; font-weight: 800; font-family: var(--font-mono); color: #7ee787; letter-spacing: 6px; word-break: break-all; }
-        .hex-preview { background: #161b22; margin-top: 12px; padding: 10px; border-radius: 12px; font-size: 0.8rem; color: #8b949e; word-break: break-all; }
-        .footer { margin-top: 16px; text-align: center; color: #484f58; font-size: 0.7rem; }
-        .prefix-badge { background: #1f6feb; color: white; padding: 2px 8px; border-radius: 10px; font-size: 0.8rem; }
-        .notice { background: #1a1a2e; border-left: 3px solid var(--warning); padding: 10px; margin: 10px 0; border-radius: 8px; font-size: 0.85rem; color: var(--warning); }
-        .guide { background: #0f1a2b; padding: 10px; border-radius: 8px; font-size: 0.8rem; color: #8b949e; margin-top: 10px; }
-        table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 0.85rem; }
-        td, th { padding: 8px; border: 1px solid var(--border); text-align: center; color: var(--text); }
-        th { background: #0d1117; }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            line-height: 1.5;
+        }
+        .login-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .login-box {
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            text-align: center;
+            color: var(--text);
+        }
+        .login-box input {
+            padding: 12px 16px;
+            margin: 16px 0;
+            border-radius: 10px;
+            border: 1px solid var(--input-border);
+            background: var(--input-bg);
+            color: white;
+            font-size: 1.2rem;
+            text-align: center;
+            width: 200px;
+        }
+        .login-box button {
+            padding: 10px 30px;
+            border-radius: 20px;
+            border: none;
+            background: var(--btn-primary);
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .container {
+            max-width: 950px;
+            width: 100%;
+            background: var(--card-bg);
+            border-radius: 28px;
+            padding: 28px;
+            box-shadow: 0 25px 45px rgba(0,0,0,0.7);
+            border: 1px solid var(--border);
+            color: var(--text);
+        }
+        h1 { font-size: 1.8rem; font-weight: 600; margin-bottom: 4px; color: #d3e2ff; }
+        .subtitle { color: #9eb4d6; margin-bottom: 24px; border-left: 4px solid #3e7fb4; padding-left: 18px; }
+        .alert {
+            background: #1e2a3a;
+            border-left: 6px solid #4f9af5;
+            padding: 14px 18px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            color: #c6e0ff;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+        .section {
+            background: #0d1421;
+            border-radius: 18px;
+            padding: 20px;
+            margin-bottom: 24px;
+            border: 1px solid #264a6b;
+        }
+        .section h3 { margin-top: 0; margin-bottom: 12px; color: #b8d0ff; font-weight: 600; font-size: 1.1rem; }
+        .row { display: flex; gap: 18px; flex-wrap: wrap; margin-bottom: 16px; }
+        .input-group { flex: 1; min-width: 200px; }
+        label { display: block; font-weight: 500; margin-bottom: 6px; color: var(--label); font-size: 0.9rem; }
+        input, select, textarea {
+            width: 100%;
+            padding: 12px 16px;
+            background: var(--input-bg);
+            border: 1.5px solid var(--input-border);
+            border-radius: 14px;
+            font-size: 1rem;
+            color: white;
+            outline: none;
+            font-family: 'SF Mono', monospace;
+        }
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+            font-size: 0.8rem;
+        }
+        select option { background: #1a2332; }
+        input:focus, select:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(79, 154, 245, 0.2); }
+        .output-box {
+            background: #020812;
+            border: 1px solid #2c5070;
+            border-radius: 14px;
+            padding: 14px;
+            font-family: 'SF Mono', monospace;
+            font-size: 0.85rem;
+            word-break: break-all;
+            color: #b1d0f0;
+            max-height: 120px;
+            overflow-y: auto;
+            user-select: all;
+            margin-top: 8px;
+        }
+        .btn-group { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 12px; }
+        .btn {
+            background: #1e3048;
+            border: 1px solid #3d6082;
+            padding: 10px 22px;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: #e7f0ff;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .btn-primary { background: var(--btn-primary); border-color: #7fb2e0; color: white; }
+        .btn-primary:hover { background: var(--btn-hover); }
+        .btn:hover { background: #264a6e; }
+        hr { border: none; border-top: 1px solid #2c405a; margin: 20px 0; }
+        .footnote { margin-top: 16px; font-size: 0.8rem; color: #7e95b0; text-align: center; }
+        .badge { background: #1f4a6b; padding: 2px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: 700; margin-left: 8px; }
     </style>
-    <script src="https://cdn.jsdelivr.net/npm/node-forge@1.3.1/dist/forge.min.js"></script>
 </head>
 <body>
-<div class="card">
-    <h2>⚙️ SV 工程密码</h2>
-    <div class="sub">VIN 模式已验证 · Chery@ 提供已知数据查询</div>
 
-    <div class="tabs">
-        <button class="tab-btn active" id="tabVin" onclick="switchMode('vin')">🔧 系统升级 (VIN)</button>
-        <button class="tab-btn" id="tabChery" onclick="switchMode('chery')">🔑 Chery@ (ProductID)</button>
+<div class="login-overlay" id="loginOverlay">
+    <div class="login-box">
+        <h2>🔐 请输入访问密码</h2>
+        <input type="password" id="passwordInput" placeholder="请输入密码">
+        <br>
+        <button id="loginBtn">验证</button>
+        <p id="loginError" style="color: #e05a5a; margin-top: 10px; display: none;">密码错误，请重试</p>
+    </div>
+</div>
+
+<div class="container" id="mainContainer" style="display: none;">
+    <h1>🔐 密钥与授权文件签名生成器</h1>
+    <div class="subtitle">AES注入 + RSA私钥签名 · 固定4096位密钥（作为私钥）</div>
+
+    <div class="alert">
+        <strong>⚠️ 重要提示：</strong> 内置的4096位密钥为公钥，无法用于签名。点击生成签名会报错。
     </div>
 
-    <!-- VIN 模式 -->
-    <div id="vinMode">
-        <div class="input-group">
-            <label>🔹 VIN 后六位</label>
-            <input type="text" id="vinInput" value="239399" maxlength="17" autocomplete="off">
+    <!-- AES 密钥 -->
+    <div class="section">
+        <h3>🔑 AES 硬件密钥 · EngSecKey.txt</h3>
+        <p style="color: #9eb4d6; font-size: 0.85rem; margin-bottom: 12px;">生成 32 字节随机十六进制字符串，放入 U 盘根目录，在 ADB 开关界面点击“注入AESKEY”。</p>
+        <div class="output-box" id="aesKeyDisplay">点击下方按钮生成</div>
+        <div class="btn-group">
+            <button class="btn btn-primary" id="genAesBtn">🎲 生成随机 AES 密钥</button>
+            <button class="btn" id="downloadAesBtn">⬇ 下载 EngSecKey.txt</button>
         </div>
-        <div class="input-group">
-            <label>🔹 随机码 (4位)</label>
-            <div class="random-row">
-                <input type="text" id="randomInputVin" value="5109" maxlength="4" inputmode="numeric">
-                <button class="btn" onclick="document.getElementById('randomInputVin').value=rand4(); computeVin();">🎲 随机</button>
+    </div>
+
+    <!-- 固定私钥 -->
+    <div class="section">
+        <h3>🔓 内置固定私钥 (4096位) <span class="badge">只读</span></h3>
+        <textarea id="privateKeyInput" readonly style="height: 140px;">MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEA50ZLpDBDwth5Y1EI4Y6yykxWQIqm0LWCEkoA52YcpPJDsscuxZToki6a5l+8GFLlMxvhg2I8ph+bThsngy2wmL5Ip3NNFwCYrRIvowfofQ+UltChkn/bK3VE3+3Ndb9RLbU9O3ocXhiH24tWKFBh6+cglMDolsgjOjPDN6HfJiWXEx/hOXREF9dqLy8/xemHHdVLErf3WmyNFgTdagn/VCnERfzNZoi4O4Oa4Jk3/puVLJCMjT/iS4F+xXSr16fwNZcIiqNn6oda702BAFKcPe+Zn+NyhrShSL36DRvCwlpAMdqz6+KaC8mZZPZthcHfYJP1jciZDUJ6XKMJY3Bc9bCFDPIbRfK+a3HSU46U8hvuDVfP+DQw8u+URKlY1ISWyjTKr6W1GhU1Fb9Y2MDhgoqMc20pD4C9HDlg4Cloc30Oasc3TRcL+cGIG1donPLF/wsA3e9nOOEKUx7IxUQ1ly7DUtWMj/VbRV6GgXkEBKR9EFDxcRspuIZmMVo8ktAf23aNW4AERdaBTsoILMMc5KBc9k9eLzIBP0H4N3wAp1B1PowMGFY+JFQaCKLNmOxiyfCVN4eIn641xvJySuEgLCpdD3SOGJN7kuM2Is3I2ZpIHRtVzhXdc1IGOK9d8xFjkTWZhaL6l+5ypQ+EOAoPu9m+5QHnOWfnTU/68kDPGPsCAwEAAQ==</textarea>
+    </div>
+
+    <!-- 签名数据 -->
+    <div class="section">
+        <h3>📝 签名数据</h3>
+        <div class="row">
+            <div class="input-group">
+                <label>📟 硬件序列号</label>
+                <input type="text" id="serialInput" placeholder="例如: 18_001015530012438" value="">
+            </div>
+            <div class="input-group">
+                <label>📅 日期 (yyyyMMdd)</label>
+                <input type="text" id="dateInput">
             </div>
         </div>
-        <button class="btn-primary" onclick="computeVin()">计算 VIN 密码</button>
-    </div>
-
-    <!-- Chery@ 模式 -->
-    <div id="cheryMode" style="display:none;">
-        <div class="notice">
-            ⚠️ Chery@ 密码由 MCU 通过 VDBus 事件 <code>802018</code> 返回，APK 内无算法。<br>
-            以下提供已知正确数据的快速查询，以及 ADB 日志抓取指南。
-        </div>
-        <div class="input-group">
-            <label>🔹 ProductID 后六位</label>
-            <input type="text" id="productIdInput" value="000346" maxlength="17" autocomplete="off">
-        </div>
-        <div class="input-group">
-            <label>🔹 ranNum (4位)</label>
-            <div class="random-row">
-                <input type="text" id="randomInputChery" value="4997" maxlength="4" inputmode="numeric">
-                <button class="btn" onclick="document.getElementById('randomInputChery').value=rand4(); lookupChery();">🎲 随机</button>
+        <div class="row">
+            <div class="input-group">
+                <label>🔧 授权类型</label>
+                <select id="authTypeSelect">
+                    <option value="adb" selected>📱 ADB 授权 — 序列号+日期</option>
+                    <option value="superdoor">🚪 超级后门 — 序列号+9+日期</option>
+                </select>
             </div>
         </div>
-        <button class="btn-primary" onclick="lookupChery()">查询 / 计算建议</button>
+        <p style="color: #9eb4d6; font-size: 0.85rem; margin-bottom: 4px;"><strong>待签名数据：</strong></p>
+        <div class="output-box" id="dataPreview">（请输入序列号）</div>
     </div>
 
-    <div class="result-box">
-        <div class="result-label" id="resultLabel">当前密码</div>
-        <div id="passwordResult">————</div>
-        <div class="hex-preview" id="fullHexPreview"></div>
-    </div>
-
-    <!-- Chery@ 已知正确密码表 -->
-    <div id="cheryKnownTable" style="display:none; margin-top:16px;">
-        <strong style="color:var(--text); font-size:0.9rem;">已知正确密码（ProductID: 000346）</strong>
-        <table>
-            <tr><th>ranNum</th><th>Chery@密码</th></tr>
-            <tr><td>4997</td><td>Chery@380156</td></tr>
-            <tr><td>5329</td><td>Chery@676336</td></tr>
-        </table>
-        <div class="guide">
-            📌 如何获取新 ranNum 的密码？<br>
-            1. 电脑连接车机，执行：<code>adb logcat | grep -i "chery\|380156\|password"</code><br>
-            2. 在车机上触发 ADB 开关的密码弹窗<br>
-            3. 日志中会显示 MCU 返回的密码
+    <!-- 签名操作 -->
+    <div class="section">
+        <h3>✍️ 生成签名</h3>
+        <div class="btn-group">
+            <button class="btn btn-primary" id="signBtn">✍️ 生成签名</button>
+            <button class="btn" id="downloadAdbBtn">⬇ 下载 adbauth.key</button>
+            <button class="btn" id="downloadSuperBtn">⬇ 下载 superdoor.key</button>
         </div>
+        <p style="color: #9eb4d6; font-size: 0.85rem; margin-top: 12px; margin-bottom: 4px;"><strong>签名结果：</strong></p>
+        <div class="output-box" id="signaturePreview">尚未生成</div>
     </div>
 
-    <div class="footer">Desay SV · VIN 模式已验证 · Chery@ 需 MCU 通信</div>
+    <hr>
+    <div class="footnote">* 内置密钥为公钥，无法生成有效签名。</div>
 </div>
 
 <script>
-// ==================== 全局变量 ====================
-let currentMode = 'vin';
-const KEY_HEX = "2377DEAE3106286889297B8AEC0A157E";   // 硬编码 AES 密钥
+    (function(){
+        // 密码验证
+        const CORRECT_PASSWORD = "499884";
+        const loginOverlay = document.getElementById('loginOverlay');
+        const mainContainer = document.getElementById('mainContainer');
+        const passwordInput = document.getElementById('passwordInput');
+        const loginBtn = document.getElementById('loginBtn');
+        const loginError = document.getElementById('loginError');
 
-// ==================== 工具函数 ====================
-function rand4() {
-    return '' + (Math.floor(Math.random()*9)+1) + Math.floor(Math.random()*10) + Math.floor(Math.random()*10) + Math.floor(Math.random()*10);
-}
-function getLast6(s) {
-    const c = s.trim().toUpperCase();
-    return c.length > 6 ? c.slice(-6) : c.padStart(6, '0');
-}
+        loginBtn.addEventListener('click', () => {
+            if (passwordInput.value === CORRECT_PASSWORD) {
+                loginOverlay.style.display = 'none';
+                mainContainer.style.display = 'block';
+            } else {
+                loginError.style.display = 'block';
+            }
+        });
+        passwordInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') loginBtn.click();
+        });
 
-// ==================== AES-CMAC (使用 forge 库) ====================
-function aesCmac(keyHex, message) {
-    const key = forge.util.hexToBytes(keyHex);
-    const msg = forge.util.createBuffer(message, 'utf8');
-    const cmac = forge.cipher.createCipher('AES-CMAC', key);
-    cmac.start();
-    cmac.update(msg);
-    cmac.finish();
-    return cmac.output.toHex();
-}
+        // 固定私钥（实际为公钥）
+        const FIXED_KEY = `MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEA50ZLpDBDwth5Y1EI4Y6yykxWQIqm0LWCEkoA52YcpPJDsscuxZToki6a5l+8GFLlMxvhg2I8ph+bThsngy2wmL5Ip3NNFwCYrRIvowfofQ+UltChkn/bK3VE3+3Ndb9RLbU9O3ocXhiH24tWKFBh6+cglMDolsgjOjPDN6HfJiWXEx/hOXREF9dqLy8/xemHHdVLErf3WmyNFgTdagn/VCnERfzNZoi4O4Oa4Jk3/puVLJCMjT/iS4F+xXSr16fwNZcIiqNn6oda702BAFKcPe+Zn+NyhrShSL36DRvCwlpAMdqz6+KaC8mZZPZthcHfYJP1jciZDUJ6XKMJY3Bc9bCFDPIbRfK+a3HSU46U8hvuDVfP+DQw8u+URKlY1ISWyjTKr6W1GhU1Fb9Y2MDhgoqMc20pD4C9HDlg4Cloc30Oasc3TRcL+cGIG1donPLF/wsA3e9nOOEKUx7IxUQ1ly7DUtWMj/VbRV6GgXkEBKR9EFDxcRspuIZmMVo8ktAf23aNW4AERdaBTsoILMMc5KBc9k9eLzIBP0H4N3wAp1B1PowMGFY+JFQaCKLNmOxiyfCVN4eIn641xvJySuEgLCpdD3SOGJN7kuM2Is3I2ZpIHRtVzhXdc1IGOK9d8xFjkTWZhaL6l+5ypQ+EOAoPu9m+5QHnOWfnTU/68kDPGPsCAwEAAQ==`;
 
-// ==================== VIN 模式计算 ====================
-function computeVin() {
-    const vinLast6 = getLast6(document.getElementById('vinInput').value);
-    const randomCode = document.getElementById('randomInputVin').value.trim();
-    if (!/^\d{4}$/.test(randomCode)) {
-        document.getElementById('passwordResult').textContent = '随机码需4位数字';
-        document.getElementById('fullHexPreview').innerHTML = '';
-        return;
-    }
-    const raw = vinLast6 + randomCode + "0123";
-    const fullHex = aesCmac(KEY_HEX, raw).toLowerCase();
-    const password = fullHex.slice(-6);
-    document.getElementById('passwordResult').textContent = password;
-    document.getElementById('fullHexPreview').innerHTML = `输入: "${raw}"<br>CMAC: ${fullHex}<br>密码: ${password}`;
-}
+        // AES 功能
+        const aesDisplay = document.getElementById('aesKeyDisplay');
+        let currentAesKey = '';
 
-// ==================== Chery@ 模式（已知数据查询 + 抓日志指引） ====================
-function lookupChery() {
-    const prodLast6 = getLast6(document.getElementById('productIdInput').value);
-    const ranNum = document.getElementById('randomInputChery').value.trim();
-    if (!/^\d{4}$/.test(ranNum)) {
-        document.getElementById('passwordResult').textContent = '随机码需4位数字';
-        document.getElementById('fullHexPreview').innerHTML = '';
-        return;
-    }
-
-    // 已知数据表
-    const knownData = {
-        "000346": {
-            "4997": "Chery@380156",
-            "5329": "Chery@676336"
+        function randomHex(size) {
+            const arr = new Uint8Array(size);
+            crypto.getRandomValues(arr);
+            return Array.from(arr, b => b.toString(16).padStart(2, '0')).join('');
         }
-    };
 
-    if (knownData[prodLast6] && knownData[prodLast6][ranNum]) {
-        document.getElementById('passwordResult').textContent = knownData[prodLast6][ranNum];
-        document.getElementById('fullHexPreview').innerHTML = `✅ 已知正确密码 (ProductID: ${prodLast6}, ranNum: ${ranNum})`;
-    } else {
-        document.getElementById('passwordResult').textContent = '未知';
-        document.getElementById('fullHexPreview').innerHTML = `
-            ❌ 此组合不在已知数据库中。<br>
-            📌 请使用 ADB 抓取密码：<br>
-            <code>adb logcat | grep -i "chery\|380156\|password"</code><br>
-            然后操作车机触发密码弹窗，日志会直接显示密码。
-        `;
-    }
-}
+        document.getElementById('genAesBtn').addEventListener('click', () => {
+            currentAesKey = randomHex(32).toUpperCase();
+            aesDisplay.textContent = currentAesKey;
+        });
 
-// ==================== 模式切换 ====================
-function switchMode(mode) {
-    currentMode = mode;
-    document.getElementById('tabVin').classList.toggle('active', mode === 'vin');
-    document.getElementById('tabChery').classList.toggle('active', mode === 'chery');
-    document.getElementById('vinMode').style.display = mode === 'vin' ? 'block' : 'none';
-    document.getElementById('cheryMode').style.display = mode === 'chery' ? 'block' : 'none';
-    document.getElementById('cheryKnownTable').style.display = mode === 'chery' ? 'block' : 'none';
-    document.getElementById('resultLabel').innerHTML = mode === 'vin' ? '当前密码' : '当前密码 <span class="prefix-badge">Chery@</span>';
+        document.getElementById('downloadAesBtn').addEventListener('click', () => {
+            if (!currentAesKey) { alert('请先生成 AES 密钥'); return; }
+            const blob = new Blob([currentAesKey], { type: 'application/octet-stream' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'EngSecKey.txt';
+            a.click();
+        });
 
-    if (mode === 'vin') {
-        computeVin();
-    } else {
-        lookupChery();
-    }
-}
+        // 初始化 AES
+        currentAesKey = randomHex(32).toUpperCase();
+        aesDisplay.textContent = currentAesKey;
 
-// ==================== 页面初始化 ====================
-window.onload = function() {
-    computeVin();
-};
+        // 签名数据
+        const serialInput = document.getElementById('serialInput');
+        const dateInput = document.getElementById('dateInput');
+        const authTypeSelect = document.getElementById('authTypeSelect');
+        const dataPreview = document.getElementById('dataPreview');
+        const signaturePreview = document.getElementById('signaturePreview');
+        let lastSignature = null;
+
+        function getTodayStr() {
+            const d = new Date();
+            return d.getFullYear() + String(d.getMonth()+1).padStart(2,'0') + String(d.getDate()).padStart(2,'0');
+        }
+        if (!dateInput.value) dateInput.value = getTodayStr();
+
+        function getDataString() {
+            const serial = serialInput.value.trim() || 'UNKNOWN';
+            let date = dateInput.value.trim();
+            if (!/^\d{8}$/.test(date)) { date = getTodayStr(); dateInput.value = date; }
+            return (authTypeSelect.value === 'superdoor') ? serial + '9' + date : serial + date;
+        }
+
+        function updateDataPreview() {
+            dataPreview.textContent = serialInput.value.trim() ? getDataString() : '（请输入序列号）';
+        }
+        serialInput.addEventListener('input', updateDataPreview);
+        dateInput.addEventListener('input', function() { this.value = this.value.replace(/\D/g,'').slice(0,8); updateDataPreview(); });
+        authTypeSelect.addEventListener('change', updateDataPreview);
+        updateDataPreview();
+
+        // 签名函数
+        function pemToBuffer(pem) {
+            const b64 = pem.replace(/-----[^-]+-----/g, '').replace(/\s/g, '');
+            const bytes = new Uint8Array(b64.length);
+            for (let i = 0; i < b64.length; i++) bytes[i] = b64.charCodeAt(i);
+            return bytes.buffer;
+        }
+
+        function arrayBufferToBase64(buffer) {
+            const bytes = new Uint8Array(buffer);
+            let bin = '';
+            for (let i = 0; i < bytes.byteLength; i++) bin += String.fromCharCode(bytes[i]);
+            return btoa(bin);
+        }
+
+        document.getElementById('signBtn').addEventListener('click', async () => {
+            try {
+                const key = await crypto.subtle.importKey('pkcs8', pemToBuffer(FIXED_KEY),
+                    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['sign']);
+                const sig = await crypto.subtle.sign({ name: 'RSASSA-PKCS1-v1_5' }, key, new TextEncoder().encode(getDataString()));
+                lastSignature = arrayBufferToBase64(sig);
+                signaturePreview.textContent = lastSignature;
+            } catch (e) {
+                signaturePreview.textContent = '签名失败: ' + e.message;
+                lastSignature = null;
+            }
+        });
+
+        function download(content, filename) {
+            const blob = new Blob([content], { type: 'application/octet-stream' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = filename;
+            a.click();
+        }
+
+        document.getElementById('downloadAdbBtn').addEventListener('click', () => {
+            if (!lastSignature) { alert('请先生成签名'); return; }
+            download(lastSignature, 'adbauth.key');
+        });
+        document.getElementById('downloadSuperBtn').addEventListener('click', () => {
+            if (!lastSignature) { alert('请先生成签名'); return; }
+            download(lastSignature, 'superdoor.key');
+        });
+    })();
 </script>
 </body>
 </html>
