@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>工程模式 · 密钥与授权文件签名生成器</title>
+    <title>工程模式 · AES密钥与授权文件签名生成器 (密码保护)</title>
     <style>
         :root {
             --bg: #121826;
@@ -28,13 +28,14 @@
             padding: 20px;
             line-height: 1.5;
         }
+        /* 登录遮罩 */
         .login-overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.8);
+            background: rgba(0,0,0,0.85);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -42,11 +43,21 @@
         }
         .login-box {
             background: var(--card-bg);
-            padding: 30px;
-            border-radius: 20px;
+            padding: 30px 40px;
+            border-radius: 24px;
             border: 1px solid var(--border);
             text-align: center;
             color: var(--text);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.7);
+        }
+        /* 红色骷髅头和叉号 */
+        .skull-x {
+            font-size: 70px;
+            color: #e05a5a;
+            line-height: 1;
+            margin-bottom: 10px;
+            letter-spacing: 8px;
+            text-shadow: 0 0 15px rgba(224,90,90,0.6);
         }
         .login-box input {
             padding: 12px 16px;
@@ -67,6 +78,7 @@
             color: white;
             font-weight: 600;
             cursor: pointer;
+            font-size: 1rem;
         }
         .container {
             max-width: 950px;
@@ -155,9 +167,11 @@
 </head>
 <body>
 
+<!-- 登录遮罩层（含骷髅头和叉号） -->
 <div class="login-overlay" id="loginOverlay">
     <div class="login-box">
-        <h2>🔐 请输入访问密码</h2>
+        <div class="skull-x">💀 ❌</div>
+        <h2 style="margin-bottom:20px;">🔐 请输入访问密码</h2>
         <input type="password" id="passwordInput" placeholder="请输入密码">
         <br>
         <button id="loginBtn">验证</button>
@@ -165,12 +179,13 @@
     </div>
 </div>
 
+<!-- 主界面 -->
 <div class="container" id="mainContainer" style="display: none;">
     <h1>🔐 密钥与授权文件签名生成器</h1>
-    <div class="subtitle">AES注入 + RSA私钥签名 · 固定4096位密钥</div>
+    <div class="subtitle">AES注入 + 固定私钥 + 公钥验证 + 随机私钥</div>
 
     <div class="alert">
-        
+
     <!-- AES 密钥 -->
     <div class="section">
         <h3>🔑 AES 硬件密钥 · EngSecKey.txt</h3>
@@ -182,10 +197,23 @@
         </div>
     </div>
 
-    <!-- 固定私钥 -->
+    <!-- 2048位固定公钥（用于验证） -->
     <div class="section">
-        <h3>🔓 内置固定私钥 (4096位) <span class="badge">只读</span></h3>
+        <h3>🔑 车机固定 RSA 公钥 (2048位) · 用于验证签名</h3>
+        <div class="output-box" style="max-height:80px; font-size:0.75rem;">MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA10pjZNRMXXdHqnqI3BbAX3kmAeAck0TZxisu4pBtw7J0x0H2ZMl3xfz+gAsqIJAzC4uMoQ0grg1mlPPicJE+VCSmyiCdI+CuFbQzbZYitOQzpjN9eyXGkJV0LSq6qvSVuD5/b10lUmLLsK6YWpERrHfypLTd49XbsYUwb2O9QwZZoPvFHwNwmK7DONWTNCLAg3+UEDoItSvzjiw1G8d1ipANtejMY0mYdjrjJFmtsKeCvW4iUYBhz8vAq5ty+hVLEu8gwI990p0WuBCLyX4CdaltmKba5Fynq0J7CZ+PR2KM1MdifDLsh7r6/tkoST830m0ee3m7a+lqF0UlTsw9MQIDAQAB</div>
+        <button class="btn" id="copyPubkeyBtn" style="margin-top:8px;">📋 复制公钥</button>
+    </div>
+
+    <!-- 私钥区域（默认显示4096公钥，可生成随机私钥） -->
+    <div class="section">
+        <h3>🔓 私钥 <span class="badge">可生成随机私钥</span></h3>
         <textarea id="privateKeyInput" readonly style="height: 140px;">MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEA50ZLpDBDwth5Y1EI4Y6yykxWQIqm0LWCEkoA52YcpPJDsscuxZToki6a5l+8GFLlMxvhg2I8ph+bThsngy2wmL5Ip3NNFwCYrRIvowfofQ+UltChkn/bK3VE3+3Ndb9RLbU9O3ocXhiH24tWKFBh6+cglMDolsgjOjPDN6HfJiWXEx/hOXREF9dqLy8/xemHHdVLErf3WmyNFgTdagn/VCnERfzNZoi4O4Oa4Jk3/puVLJCMjT/iS4F+xXSr16fwNZcIiqNn6oda702BAFKcPe+Zn+NyhrShSL36DRvCwlpAMdqz6+KaC8mZZPZthcHfYJP1jciZDUJ6XKMJY3Bc9bCFDPIbRfK+a3HSU46U8hvuDVfP+DQw8u+URKlY1ISWyjTKr6W1GhU1Fb9Y2MDhgoqMc20pD4C9HDlg4Cloc30Oasc3TRcL+cGIG1donPLF/wsA3e9nOOEKUx7IxUQ1ly7DUtWMj/VbRV6GgXkEBKR9EFDxcRspuIZmMVo8ktAf23aNW4AERdaBTsoILMMc5KBc9k9eLzIBP0H4N3wAp1B1PowMGFY+JFQaCKLNmOxiyfCVN4eIn641xvJySuEgLCpdD3SOGJN7kuM2Is3I2ZpIHRtVzhXdc1IGOK9d8xFjkTWZhaL6l+5ypQ+EOAoPu9m+5QHnOWfnTU/68kDPGPsCAwEAAQ==</textarea>
+        <div class="btn-group">
+            <button class="btn btn-primary" id="generateRandomKeyBtn">🔄 生成随机 RSA 私钥 </button>
+            <button class="btn" id="resetDefaultKeyBtn">↩ 恢复默认公钥</button>
+        </div>
+        <p style="color: #9eb4d6; font-size: 0.75rem; margin-top: 8px;">
+                   </p>
     </div>
 
     <!-- 签名数据 -->
@@ -216,18 +244,20 @@
 
     <!-- 签名操作 -->
     <div class="section">
-        <h3>✍️ 生成签名</h3>
+        <h3>✍️ 生成 & 验证签名</h3>
         <div class="btn-group">
             <button class="btn btn-primary" id="signBtn">✍️ 生成签名</button>
+            <button class="btn" id="verifyBtn">🔍 验证签名</button>
             <button class="btn" id="downloadAdbBtn">⬇ 下载 adbauth.key</button>
             <button class="btn" id="downloadSuperBtn">⬇ 下载 superdoor.key</button>
+            <button class="btn" id="copySigBtn">📋 复制签名</button>
         </div>
         <p style="color: #9eb4d6; font-size: 0.85rem; margin-top: 12px; margin-bottom: 4px;"><strong>签名结果：</strong></p>
         <div class="output-box" id="signaturePreview">尚未生成</div>
     </div>
 
     <hr>
-    <div class="footnote">* 内置密钥为公钥，无法生成有效签名。</div>
+    <div class="footnote">* 2048位公钥用于验证签名，与车机验证逻辑一致。默认4096位密钥为公钥，无法签名。</div>
 </div>
 
 <script>
@@ -252,8 +282,17 @@
             if (e.key === 'Enter') loginBtn.click();
         });
 
-        // 固定私钥
-        const FIXED_KEY = `MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEA50ZLpDBDwth5Y1EI4Y6yykxWQIqm0LWCEkoA52YcpPJDsscuxZToki6a5l+8GFLlMxvhg2I8ph+bThsngy2wmL5Ip3NNFwCYrRIvowfofQ+UltChkn/bK3VE3+3Ndb9RLbU9O3ocXhiH24tWKFBh6+cglMDolsgjOjPDN6HfJiWXEx/hOXREF9dqLy8/xemHHdVLErf3WmyNFgTdagn/VCnERfzNZoi4O4Oa4Jk3/puVLJCMjT/iS4F+xXSr16fwNZcIiqNn6oda702BAFKcPe+Zn+NyhrShSL36DRvCwlpAMdqz6+KaC8mZZPZthcHfYJP1jciZDUJ6XKMJY3Bc9bCFDPIbRfK+a3HSU46U8hvuDVfP+DQw8u+URKlY1ISWyjTKr6W1GhU1Fb9Y2MDhgoqMc20pD4C9HDlg4Cloc30Oasc3TRcL+cGIG1donPLF/wsA3e9nOOEKUx7IxUQ1ly7DUtWMj/VbRV6GgXkEBKR9EFDxcRspuIZmMVo8ktAf23aNW4AERdaBTsoILMMc5KBc9k9eLzIBP0H4N3wAp1B1PowMGFY+JFQaCKLNmOxiyfCVN4eIn641xvJySuEgLCpdD3SOGJN7kuM2Is3I2ZpIHRtVzhXdc1IGOK9d8xFjkTWZhaL6l+5ypQ+EOAoPu9m+5QHnOWfnTU/68kDPGPsCAwEAAQ==`;
+        // ============ 密钥定义 ============
+        const PUBKEY_2048 = `MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA10pjZNRMXXdHqnqI3BbAX3kmAeAck0TZxisu4pBtw7J0x0H2ZMl3xfz+gAsqIJAzC4uMoQ0grg1mlPPicJE+VCSmyiCdI+CuFbQzbZYitOQzpjN9eyXGkJV0LSq6qvSVuD5/b10lUmLLsK6YWpERrHfypLTd49XbsYUwb2O9QwZZoPvFHwNwmK7DONWTNCLAg3+UEDoItSvzjiw1G8d1ipANtejMY0mYdjrjJFmtsKeCvW4iUYBhz8vAq5ty+hVLEu8gwI990p0WuBCLyX4CdaltmKba5Fynq0J7CZ+PR2KM1MdifDLsh7r6/tkoST830m0ee3m7a+lqF0UlTsw9MQIDAQAB`;
+        const DEFAULT_KEY_4096 = `MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEA50ZLpDBDwth5Y1EI4Y6yykxWQIqm0LWCEkoA52YcpPJDsscuxZToki6a5l+8GFLlMxvhg2I8ph+bThsngy2wmL5Ip3NNFwCYrRIvowfofQ+UltChkn/bK3VE3+3Ndb9RLbU9O3ocXhiH24tWKFBh6+cglMDolsgjOjPDN6HfJiWXEx/hOXREF9dqLy8/xemHHdVLErf3WmyNFgTdagn/VCnERfzNZoi4O4Oa4Jk3/puVLJCMjT/iS4F+xXSr16fwNZcIiqNn6oda702BAFKcPe+Zn+NyhrShSL36DRvCwlpAMdqz6+KaC8mZZPZthcHfYJP1jciZDUJ6XKMJY3Bc9bCFDPIbRfK+a3HSU46U8hvuDVfP+DQw8u+URKlY1ISWyjTKr6W1GhU1Fb9Y2MDhgoqMc20pD4C9HDlg4Cloc30Oasc3TRcL+cGIG1donPLF/wsA3e9nOOEKUx7IxUQ1ly7DUtWMj/VbRV6GgXkEBKR9EFDxcRspuIZmMVo8ktAf23aNW4AERdaBTsoILMMc5KBc9k9eLzIBP0H4N3wAp1B1PowMGFY+JFQaCKLNmOxiyfCVN4eIn641xvJySuEgLCpdD3SOGJN7kuM2Is3I2ZpIHRtVzhXdc1IGOK9d8xFjkTWZhaL6l+5ypQ+EOAoPu9m+5QHnOWfnTU/68kDPGPsCAwEAAQ==`;
+
+        // 当前使用的私钥（字符串）和临时密钥对（CryptoKeyPair）
+        let currentPrivateKeyPem = DEFAULT_KEY_4096;
+        let tempKeyPair = null;  // { privateKey, publicKey }
+
+        const privateKeyTextarea = document.getElementById('privateKeyInput');
+        // 初始显示默认密钥
+        privateKeyTextarea.value = DEFAULT_KEY_4096;
 
         // AES 功能
         const aesDisplay = document.getElementById('aesKeyDisplay');
@@ -279,7 +318,6 @@
             a.click();
         });
 
-        // 初始化 AES
         currentAesKey = randomHex(32).toUpperCase();
         aesDisplay.textContent = currentAesKey;
 
@@ -312,7 +350,7 @@
         authTypeSelect.addEventListener('change', updateDataPreview);
         updateDataPreview();
 
-        // 签名函数
+        // 工具函数
         function pemToBuffer(pem) {
             const b64 = pem.replace(/-----[^-]+-----/g, '').replace(/\s/g, '');
             const bytes = new Uint8Array(b64.length);
@@ -327,11 +365,70 @@
             return btoa(bin);
         }
 
+        async function importPrivateKey(pem) {
+            return crypto.subtle.importKey('pkcs8', pemToBuffer(pem),
+                { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['sign']);
+        }
+
+        async function importPublicKey(pem) {
+            return crypto.subtle.importKey('spki', pemToBuffer(pem),
+                { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, true, ['verify']);
+        }
+
+        // 生成随机密钥对
+        async function generateRandomKeyPair() {
+            return await crypto.subtle.generateKey(
+                {
+                    name: 'RSASSA-PKCS1-v1_5',
+                    modulusLength: 2048,
+                    publicExponent: new Uint8Array([0x01, 0x00, 0x01]),
+                    hash: 'SHA-256'
+                },
+                true,
+                ['sign', 'verify']
+            );
+        }
+
+        async function exportPrivateKeyPem(key) {
+            const exported = await crypto.subtle.exportKey('pkcs8', key);
+            const b64 = arrayBufferToBase64(exported);
+            return `-----BEGIN PRIVATE KEY-----\n${b64.match(/.{1,64}/g).join('\n')}\n-----END PRIVATE KEY-----`;
+        }
+
+        // 随机私钥按钮
+        document.getElementById('generateRandomKeyBtn').addEventListener('click', async () => {
+            try {
+                tempKeyPair = await generateRandomKeyPair();
+                const privPem = await exportPrivateKeyPem(tempKeyPair.privateKey);
+                privateKeyTextarea.value = privPem;
+                currentPrivateKeyPem = privPem;
+                alert('✅ 临时 RSA 私钥已生成，可用于签名演示。验证时将自动使用对应的临时公钥。');
+            } catch (e) {
+                alert('生成失败: ' + e.message);
+            }
+        });
+
+        // 恢复默认密钥按钮
+        document.getElementById('resetDefaultKeyBtn').addEventListener('click', () => {
+            privateKeyTextarea.value = DEFAULT_KEY_4096;
+            currentPrivateKeyPem = DEFAULT_KEY_4096;
+            tempKeyPair = null;
+            lastSignature = null;
+            signaturePreview.textContent = '尚未生成';
+        });
+
+        // 签名
         document.getElementById('signBtn').addEventListener('click', async () => {
             try {
-                const key = await crypto.subtle.importKey('pkcs8', pemToBuffer(FIXED_KEY),
-                    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['sign']);
-                const sig = await crypto.subtle.sign({ name: 'RSASSA-PKCS1-v1_5' }, key, new TextEncoder().encode(getDataString()));
+                let privateKey;
+                if (tempKeyPair) {
+                    // 使用临时密钥对
+                    privateKey = tempKeyPair.privateKey;
+                } else {
+                    // 使用当前显示的私钥（默认4096公钥，导入会失败）
+                    privateKey = await importPrivateKey(currentPrivateKeyPem);
+                }
+                const sig = await crypto.subtle.sign({ name: 'RSASSA-PKCS1-v1_5' }, privateKey, new TextEncoder().encode(getDataString()));
                 lastSignature = arrayBufferToBase64(sig);
                 signaturePreview.textContent = lastSignature;
             } catch (e) {
@@ -340,6 +437,27 @@
             }
         });
 
+        // 验证签名
+        document.getElementById('verifyBtn').addEventListener('click', async () => {
+            try {
+                if (!lastSignature) { alert('请先生成签名'); return; }
+                let publicKey;
+                if (tempKeyPair) {
+                    // 优先使用临时公钥
+                    publicKey = tempKeyPair.publicKey;
+                } else {
+                    // 使用固定2048位公钥
+                    publicKey = await importPublicKey(PUBKEY_2048);
+                }
+                const sigBuf = Uint8Array.from(atob(lastSignature), c => c.charCodeAt(0)).buffer;
+                const isValid = await crypto.subtle.verify({ name: 'RSASSA-PKCS1-v1_5' }, publicKey, sigBuf, new TextEncoder().encode(getDataString()));
+                alert(isValid ? '✅ 签名验证成功！' : '❌ 签名验证失败！');
+            } catch (e) {
+                alert('验证出错: ' + e.message);
+            }
+        });
+
+        // 下载/复制
         function download(content, filename) {
             const blob = new Blob([content], { type: 'application/octet-stream' });
             const a = document.createElement('a');
@@ -355,6 +473,13 @@
         document.getElementById('downloadSuperBtn').addEventListener('click', () => {
             if (!lastSignature) { alert('请先生成签名'); return; }
             download(lastSignature, 'superdoor.key');
+        });
+        document.getElementById('copySigBtn').addEventListener('click', () => {
+            if (!lastSignature) { alert('请先生成签名'); return; }
+            navigator.clipboard?.writeText(lastSignature).then(() => alert('已复制'));
+        });
+        document.getElementById('copyPubkeyBtn').addEventListener('click', () => {
+            navigator.clipboard?.writeText(PUBKEY_2048).then(() => alert('2048位公钥已复制'));
         });
     })();
 </script>
